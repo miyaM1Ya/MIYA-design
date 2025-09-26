@@ -2,21 +2,13 @@
 
 import { useState } from "react";
 import {
-  Menu,
-  X,
-  Image as ImageIcon,
-  MessagesSquare,
-  Star,
-  CreditCard,
-  ShieldCheck,
-  Send,
-  Quote,
-  Sparkles,
-  PhoneCall,
-  Mail,
-  ArrowRight,
-  GalleryHorizontalEnd,
+  Menu, X, Image as ImageIcon,
+  MessagesSquare,    // 디스코드 아이콘
+  MessageCircle,     // ✅ 카카오톡 아이콘
+  Star, CreditCard, ShieldCheck, Send, Quote, Sparkles,
+  ArrowRight, GalleryHorizontalEnd,
 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -111,34 +103,32 @@ function Navbar({ onContact }: { onContact: () => void }) {
 
 // --- CONTACT DIALOG (Inquiry Links) ---
 // 폼 대신 "링크로 문의" — 메일/디스코드 버튼만 제공
+// --- CONTACT DIALOG (Kakao + Discord only) ---
 function ContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle>의뢰/문의</DialogTitle>
-          <DialogDescription>원하는 채널로 편하게 연락 주세요.</DialogDescription>
+          <DialogDescription>카카오톡 또는 디스코드로 연락 주세요.</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input placeholder="이름 또는 닉네임 (선택)" />
-            <Input placeholder="요청 작업 (배너/로고/프로필/포스터/칭호)" />
-          </div>
-          <Textarea rows={4} placeholder="요청사항 메모(선택) — 보관용, 전송 기능은 없어요." />
           <div className="flex items-center justify-between text-xs text-neutral-500">
             <span className="flex items-center gap-1">
               <ShieldCheck className="w-4 h-4" />
-              연락은 외부 채널로 진행됩니다.
+              외부 채널로 대화가 진행됩니다.
             </span>
             <div className="flex gap-2">
+              {/* 카카오톡 오픈채팅 */}
               <Button asChild className="rounded-2xl">
-                <a href="mailto:hello@yourdomain.com">
-                  이메일 문의 <Mail className="w-4 h-4 ml-1" />
+                <a href="https://open.kakao.com/o/slHj1bUh" target="_blank" rel="noreferrer">
+                  카카오톡 문의 <MessageCircle className="w-4 h-4 ml-1" />
                 </a>
               </Button>
+              {/* 디스코드 */}
               <Button asChild variant="secondary" className="rounded-2xl">
-                <a href="https://discord.com/users/000000000000000000" target="_blank" rel="noreferrer">
+                <a href="https://discord.gg/QPZnJcvAGG" target="_blank" rel="noreferrer">
                   디스코드 문의 <MessagesSquare className="w-4 h-4 ml-1" />
                 </a>
               </Button>
@@ -149,6 +139,7 @@ function ContactDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v
     </Dialog>
   );
 }
+
 
 // --- SECTION WRAPPER ---
 function Section({
@@ -266,35 +257,67 @@ export default function StudioWireframe() {
       </Section>
 
       {/* SERVICES & PRICING */}
-      <Section id="services" title="서비스 & 기본 가격" subtitle="구체 견적은 요청 내용을 확인 후 안내됩니다.">
-        <div className="grid md:grid-cols-3 gap-5">
-          {[
-            { name: "배너", desc: "디스코드/유튜브 등 맞춤 사이즈", price: "₩35,000~" },
-            { name: "로고", desc: "워드마크 · 심볼마크", price: "₩60,000~" },
-            { name: "프로필/칭호", desc: "투명 PNG, GIF 옵션", price: "₩25,000~" },
-          ].map((s) => (
-            <Card key={s.name} className="rounded-2xl">
-              <CardHeader>
-                <CardTitle>{s.name}</CardTitle>
-                <CardDescription>{s.desc}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <ul className="text-sm list-disc pl-4 text-neutral-600">
-                  <li>기본 시안 1종 + 수정 2회</li>
-                  <li>원본/웹용 파일 제공</li>
-                  <li>급행 옵션 가능</li>
-                </ul>
-                <div className="flex items-center justify-between">
-                  <span className="text-lg font-semibold">{s.price}</span>
-                  <Button className="rounded-2xl" onClick={() => window?.scrollTo({ top: 0, behavior: "smooth" })}>
-                    의뢰하기
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </Section>
+      /* SERVICES & PRICING (요약형) */
+<Section id="services" title="서비스 & 기본 가격" subtitle="자세한 금액은 채팅 상담으로 빠르게 안내해 드려요.">
+  {/* 항목별 시작가 */}
+  <div className="grid md:grid-cols-3 gap-5">
+    {[
+      { name: "로고", desc: "워드마크 · 심볼마크", price: "₩60,000~" },
+      { name: "배너", desc: "디스코드/유튜브 맞춤", price: "₩15,000~" },
+      { name: "포스터", desc: "이벤트/홍보", price: "₩15,000~" },
+      { name: "프로필", desc: "투명 PNG, GIF 옵션", price: "₩10,000~" },
+      { name: "칭호 / 킬피드", desc: "게임/방송 텍스트 그래픽", price: "₩15,000~" },
+      { name: "영상", desc: "인트로/로고 애니메이션", price: "₩30,000~" },
+    ].map((s) => (
+      <Card key={s.name} className="rounded-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>{s.name}</span>
+            <span className="text-base font-medium text-neutral-500">{s.price}</span>
+          </CardTitle>
+          <CardDescription>{s.desc}</CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-neutral-600">
+          기본 시안 1종 · 수정 2회 포함
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+
+  {/* 정책 요약 + 상담 유도 */}
+  <div className="mt-6 grid md:grid-cols-2 gap-4">
+    <Card className="rounded-2xl">
+      <CardHeader><CardTitle className="text-base">정책 요약</CardTitle></CardHeader>
+      <CardContent>
+        <ul className="text-sm list-disc pl-4 text-neutral-600 space-y-1">
+          <li>수정 2회 무료 · 이후 1회당 +5,000~10,000원</li>
+          <li>빠른 납기(24~48h) : 총액 +30~50%</li>
+          <li>소스파일(PSD/AE) 제공하지 않습니다</li>
+        </ul>
+      </CardContent>
+    </Card>
+
+    <Card className="rounded-2xl">
+      <CardHeader>
+        <CardTitle className="text-base">자세한 견적 상담</CardTitle>
+        <CardDescription>채팅으로 빠르게 문의해 주세요.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex gap-3">
+        <Button asChild className="rounded-2xl">
+          <a href="https://open.kakao.com/o/slHj1bUh" target="_blank" rel="noreferrer">
+            카카오톡 상담 <MessageCircle className="w-4 h-4 ml-2" />
+          </a>
+        </Button>
+        <Button asChild variant="secondary" className="rounded-2xl">
+          <a href="https://discord.gg/QPZnJcvAGG" target="_blank" rel="noreferrer">
+            디스코드 상담 <MessagesSquare className="w-4 h-4 ml-2" />
+          </a>
+        </Button>
+      </CardContent>
+    </Card>
+  </div>
+</Section>
+
 
       {/* PROCESS */}
       <Section id="process" title="작업 진행 프로세스" subtitle="명확한 커뮤니케이션으로 깔끔하게 진행합니다.">
@@ -356,25 +379,28 @@ export default function StudioWireframe() {
       </Section>
 
       {/* CTA BAR */}
-      <section className="bg-neutral-50 border-t">
-        <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            <div className="text-xl font-semibold">지금 바로 예쁜 결과물, 깔끔하게 받아보세요</div>
-            <div className="text-sm text-neutral-600">디스코드/카톡으로 빠르게 상담해 드립니다.</div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button className="rounded-2xl" onClick={() => setContactOpen(true)}>
-              문의하기 <MessagesSquare className="w-4 h-4 ml-2" />
-            </Button>
-            <a href="mailto:hello@yourdomain.com" className="text-sm underline underline-offset-4 flex items-center gap-2">
-              <Mail className="w-4 h-4" /> 이메일
-            </a>
-            <a href="tel:+821012345678" className="text-sm underline underline-offset-4 flex items-center gap-2">
-              <PhoneCall className="w-4 h-4" /> 전화
-            </a>
-          </div>
-        </div>
-      </section>
+/* CTA BAR */
+<section className="bg-neutral-50 border-t">
+  <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
+    <div>
+      <div className="text-xl font-semibold">지금 바로 예쁜 결과물, 깔끔하게 받아보세요</div>
+      <div className="text-sm text-neutral-600">카카오톡/디스코드로 빠르게 상담해 드립니다.</div>
+    </div>
+    <div className="flex items-center gap-3">
+      <Button asChild className="rounded-2xl">
+        <a href="https://open.kakao.com/o/slHj1bUh" target="_blank" rel="noreferrer">
+          카카오톡 문의 <MessageCircle className="w-4 h-4 ml-2" />
+        </a>
+      </Button>
+      <Button asChild variant="secondary" className="rounded-2xl">
+        <a href="https://discord.gg/QPZnJcvAGG" target="_blank" rel="noreferrer">
+          디스코드 문의 <MessagesSquare className="w-4 h-4 ml-2" />
+        </a>
+      </Button>
+    </div>
+  </div>
+</section>
+
 
       {/* FOOTER */}
       <footer className="text-xs text-neutral-500">
