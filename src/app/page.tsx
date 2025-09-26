@@ -257,12 +257,12 @@ export default function StudioWireframe() {
       </Section>
 
       {/* SERVICES & PRICING */}
-      /* SERVICES & PRICING (요약형) */
+     {/* SERVICES & PRICING (요약형) */}
 <Section id="services" title="서비스 & 기본 가격" subtitle="자세한 금액은 채팅 상담으로 빠르게 안내해 드려요.">
   {/* 항목별 시작가 */}
   <div className="grid md:grid-cols-3 gap-5">
     {[
-      { name: "로고", desc: "워드마크 · 심볼마크", price: "₩60,000~" },
+      { name: "로고", desc: "워드마크 · 심볼마크", price: "₩15,000~" },
       { name: "배너", desc: "디스코드/유튜브 맞춤", price: "₩15,000~" },
       { name: "포스터", desc: "이벤트/홍보", price: "₩15,000~" },
       { name: "프로필", desc: "투명 PNG, GIF 옵션", price: "₩10,000~" },
