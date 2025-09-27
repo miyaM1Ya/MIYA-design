@@ -80,6 +80,10 @@ function sortByNewest(a: Review, b: Review) {
   return (b.id ?? "").localeCompare(a.id ?? "");
 }
 
+function isVideo(src: string) {
+  return /\.(mp4|webm|mov)$/i.test(src);
+}
+
 /* =========================================================
    GAS 연동
 ========================================================= */
@@ -136,7 +140,7 @@ async function fetchReviewsFromGAS(): Promise<Review[]> {
 }
 
 /* =========================================================
-   PLACEHOLDER IMAGE
+   SIMPLE PLACEHOLDER IMAGE
 ========================================================= */
 function Placeholder({
   label = "Preview",
@@ -237,7 +241,7 @@ function Navbar({ onContact }: { onContact: () => void }) {
 }
 
 /* =========================================================
-   CONTACT DIALOG (Kakao + Discord)
+   CONTACT DIALOG (Kakao + Discord only)
 ========================================================= */
 function ContactDialog({
   open,
@@ -264,12 +268,20 @@ function ContactDialog({
             </span>
             <div className="flex gap-2">
               <Button asChild className="rounded-2xl">
-                <a href="https://open.kakao.com/o/slHj1bUh" target="_blank" rel="noreferrer">
+                <a
+                  href="https://open.kakao.com/o/slHj1bUh"
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   카카오톡 문의 <MessageCircle className="w-4 h-4 ml-1" />
                 </a>
               </Button>
               <Button asChild variant="secondary" className="rounded-2xl">
-                <a href="https://discord.gg/QPZnJcvAGG" target="_blank" rel="noreferrer">
+                <a
+                  href="https://discord.gg/QPZnJcvAGG"
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   디스코드 문의 <MessagesSquare className="w-4 h-4 ml-1" />
                 </a>
               </Button>
@@ -309,12 +321,58 @@ function Section({
 }
 
 /* =========================================================
+   카테고리 미리보기 (동영상/이미지 모두)
+========================================================= */
+function CategoryPreviewDialog({
+  item,
+  onClose,
+}: {
+  item: { name: string; thumb: string } | null;
+  onClose: () => void;
+}) {
+  const open = !!item;
+  const video = item ? isVideo(item.thumb) : false;
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{item?.name ?? "미리보기"}</DialogTitle>
+        </DialogHeader>
+
+        <div className="relative w-full pb-[56%] rounded-xl overflow-hidden bg-neutral-100">
+          {item &&
+            (video ? (
+              // eslint-disable-next-line jsx-a11y/media-has-caption
+              <video
+                className="absolute inset-0 w-full h-full object-cover"
+                src={item.thumb}
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                className="absolute inset-0 w-full h-full object-cover"
+                src={item.thumb}
+                alt={item.name}
+              />
+            ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* =========================================================
    MAIN PAGE
 ========================================================= */
 export default function Page() {
   const [contactOpen, setContactOpen] = useState(false);
 
-  // 스프레드시트에서 가져온 후기만 사용
+  // 후기
   const [reviews, setReviews] = useState<Review[]>([]);
   const [page, setPage] = useState(1);
 
@@ -327,7 +385,7 @@ export default function Page() {
     })();
   }, []);
 
-  // 작성 폼 상태
+  // 작성 폼
   const [nick, setNick] = useState("");
   const [rating, setRating] = useState(5);
   const [message, setMessage] = useState("");
@@ -344,14 +402,14 @@ export default function Page() {
       text: message.trim().slice(0, 2000),
     };
 
-    // 화면에 즉시 반영(낙관적 업데이트)
+    // 화면에 즉시 반영
     setReviews((prev) => [entry, ...prev].sort(sortByNewest));
     setNick("");
     setRating(5);
     setMessage("");
     setPage(1);
 
-    // 시트 저장 → 잠시 후 서버 기준으로 재동기화
+    // 시트 저장 후 동기화
     postReviewToGAS({ author: entry.author, rating: entry.rating, text: entry.text });
     setTimeout(async () => {
       const list = await fetchReviewsFromGAS();
@@ -363,6 +421,9 @@ export default function Page() {
   const totalPages = Math.max(1, Math.ceil(reviews.length / PER_PAGE));
   const start = (page - 1) * PER_PAGE;
   const pagedReviews = reviews.slice(start, start + PER_PAGE);
+
+  // 카테고리 미리보기
+  const [catPreview, setCatPreview] = useState<{ name: string; thumb: string } | null>(null);
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
@@ -381,13 +442,20 @@ export default function Page() {
               브랜드를 빛내는 시그니처 비주얼
             </h1>
             <p className="mt-4 text-neutral-600">
-              배너, 포스터, 프로필, 로고, 칭호까지 — 깔끔하고 예쁜 무드로 빠르게 제작해 드려요. 요청 → 견적 → 시안 → 피드백 → 납품까지 원스톱.
+              배너, 포스터, 프로필, 로고, 칭호까지 — 깔끔하고 예쁜 무드로 빠르게 제작해 드려요.
+              요청 → 견적 → 시안 → 피드백 → 납품까지 원스톱.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button className="rounded-2xl" onClick={() => setContactOpen(true)}>
+              <Button
+                className="rounded-2xl"
+                onClick={() => setContactOpen(true)}
+              >
                 지금 의뢰하기
               </Button>
-              <a href="#portfolio" className="inline-flex items-center gap-2 text-sm underline underline-offset-4">
+              <a
+                href="#portfolio"
+                className="inline-flex items-center gap-2 text-sm underline underline-offset-4"
+              >
                 포트폴리오 보기 <ArrowRight className="w-4 h-4" />
               </a>
             </div>
@@ -404,22 +472,63 @@ export default function Page() {
             </div>
           </div>
 
-          <div>
-            <Placeholder label="Hero Showcase" ratio="pb-[66%]" />
+          <div className="relative w-full pb-[66%] rounded-2xl overflow-hidden bg-neutral-100">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/hero/hero.gif" // 파일명 바꿔도 됨
+              alt="Hero Showcase"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
           </div>
         </div>
       </section>
 
-      {/* CATEGORIES QUICK GRID */}
-      <Section id="portfolio" title="포트폴리오 카테고리" subtitle="필요한 작업 유형을 골라서 살펴보세요.">
+      {/* ================== PORTFOLIO CATEGORIES ================== */}
+      <Section
+        id="portfolio"
+        title="포트폴리오 카테고리"
+        subtitle="필요한 작업 유형을 골라서 살펴보세요. 자세한 포트폴리오는 디스코드에서 확인하실 수 있어요."
+      >
+        {/* 카테고리 카드 */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {["배너", "로고", "프로필", "포스터", "칭호"].map((c) => (
-            <Card key={c} className="rounded-2xl hover:shadow-md transition">
+          {[
+            { name: "배너",   thumb: "/images/categories/benner.gif"  },
+            { name: "로고",   thumb: "/images/categories/logo.gif"    },
+            { name: "프로필", thumb: "/images/categories/profile.gif" },
+            { name: "포스터", thumb: "/images/categories/poster.gif"  },
+            { name: "칭호",   thumb: "/images/categories/title.mp4"   }, // mp4도 지원
+          ].map((c) => (
+            <Card key={c.name} className="rounded-2xl hover:shadow-md transition">
               <CardContent className="p-3">
-                <Placeholder label={c} ratio="pb-[75%]" />
+                <button
+                  type="button"
+                  className="relative w-full pb-[75%] overflow-hidden rounded-2xl bg-neutral-100"
+                  onClick={() => setCatPreview(c)}
+                  title={`${c.name} 미리보기`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  {!isVideo(c.thumb) ? (
+                    <img
+                      src={c.thumb}
+                      alt={c.name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    // eslint-disable-next-line jsx-a11y/media-has-caption
+                    <video
+                      className="absolute inset-0 w-full h-full object-cover"
+                      src={c.thumb}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                    />
+                  )}
+                </button>
+
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="font-medium">{c}</span>
-                  <Button variant="secondary" size="sm" className="rounded-xl">
+                  <span className="font-medium">{c.name}</span>
+                  <Button size="sm" variant="secondary" className="rounded-xl" onClick={() => setCatPreview(c)}>
                     보기
                   </Button>
                 </div>
@@ -427,36 +536,26 @@ export default function Page() {
             </Card>
           ))}
         </div>
-      </Section>
 
-      {/* GALLERY GRID */}
-      <Section id="gallery" title="작업 갤러리" subtitle="썸네일을 눌러 상세 설명을 확인하세요.">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-          {Array.from({ length: 9 }).map((_, i) => (
-            <Card key={i} className="rounded-2xl overflow-hidden group">
-              <div className="p-0">
-                <Placeholder label={`Work #${i + 1}`} ratio="pb-[70%]" />
-              </div>
-              <div className="p-4 flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-base">프로젝트 {i + 1}</CardTitle>
-                  <CardDescription className="text-xs">컨셉 / 사용툴 / 납품형식</CardDescription>
-                </div>
-                <Badge variant="secondary">2025</Badge>
-              </div>
-            </Card>
-          ))}
-        </div>
-        <div className="mt-6 flex justify-center">
-          <Button variant="secondary" className="rounded-2xl">
-            <GalleryHorizontalEnd className="w-4 h-4 mr-2" />
-            더 보기
+        {/* 디스코드 안내 박스 */}
+        <div className="mt-6 p-4 rounded-2xl border flex items-center justify-between gap-3">
+          <p className="text-sm text-neutral-600">
+            전체/상세 포트폴리오는 디스코드 서버에서 더 편하게 확인하실 수 있어요.
+          </p>
+          <Button asChild className="rounded-2xl">
+            <a href="https://discord.gg/QPZnJcvAGG" target="_blank" rel="noreferrer">
+              디스코드에서 보기 <MessagesSquare className="w-4 h-4 ml-2" />
+            </a>
           </Button>
         </div>
       </Section>
 
-      {/* SERVICES & PRICING (요약형) */}
-      <Section id="services" title="서비스 & 기본 가격" subtitle="자세한 금액은 채팅 상담으로 빠르게 안내해 드려요.">
+      {/* ================== SERVICES & PRICING ================== */}
+      <Section
+        id="services"
+        title="서비스 & 기본 가격"
+        subtitle="자세한 금액은 채팅 상담으로 빠르게 안내해 드려요."
+      >
         <div className="grid md:grid-cols-3 gap-5">
           {[
             { name: "로고", desc: "워드마크 · 심볼마크", price: "₩15,000~" },
@@ -470,7 +569,9 @@ export default function Page() {
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>{s.name}</span>
-                  <span className="text-base font-medium text-neutral-500">{s.price}</span>
+                  <span className="text-base font-medium text-neutral-500">
+                    {s.price}
+                  </span>
                 </CardTitle>
                 <CardDescription>{s.desc}</CardDescription>
               </CardHeader>
@@ -481,6 +582,7 @@ export default function Page() {
           ))}
         </div>
 
+        {/* 정책 요약 + 상담 유도 */}
         <div className="mt-6 grid md:grid-cols-2 gap-4">
           <Card className="rounded-2xl">
             <CardHeader>
@@ -502,12 +604,20 @@ export default function Page() {
             </CardHeader>
             <CardContent className="flex gap-3">
               <Button asChild className="rounded-2xl">
-                <a href="https://open.kakao.com/o/slHj1bUh" target="_blank" rel="noreferrer">
+                <a
+                  href="https://open.kakao.com/o/slHj1bUh"
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   카카오톡 상담 <MessageCircle className="w-4 h-4 ml-2" />
                 </a>
               </Button>
               <Button asChild variant="secondary" className="rounded-2xl">
-                <a href="https://discord.gg/QPZnJcvAGG" target="_blank" rel="noreferrer">
+                <a
+                  href="https://discord.gg/QPZnJcvAGG"
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   디스코드 상담 <MessagesSquare className="w-4 h-4 ml-2" />
                 </a>
               </Button>
@@ -516,8 +626,12 @@ export default function Page() {
         </div>
       </Section>
 
-      {/* PROCESS */}
-      <Section id="process" title="작업 진행 프로세스" subtitle="명확한 커뮤니케이션으로 깔끔하게 진행합니다.">
+      {/* ================== PROCESS ================== */}
+      <Section
+        id="process"
+        title="작업 진행 프로세스"
+        subtitle="명확한 커뮤니케이션으로 깔끔하게 진행합니다."
+      >
         <div className="grid md:grid-cols-5 gap-4">
           {[
             { t: "문의", d: "요청사항/참고자료 전달", icon: Send },
@@ -526,7 +640,10 @@ export default function Page() {
             { t: "피드백", d: "수정 반영 (2회)", icon: MessagesSquare },
             { t: "납품", d: "최종 파일 전달", icon: ShieldCheck },
           ].map((step, i) => (
-            <div key={i} className="flex flex-col items-start gap-3 p-4 rounded-2xl border">
+            <div
+              key={i}
+              className="flex flex-col items-start gap-3 p-4 rounded-2xl border"
+            >
               <step.icon className="w-5 h-5" />
               <div className="font-medium">
                 {i + 1}. {step.t}
@@ -537,13 +654,15 @@ export default function Page() {
         </div>
       </Section>
 
-      {/* REVIEWS */}
+      {/* ================== REVIEWS ================== */}
       <Section id="reviews" title="클라이언트 후기">
         {/* 작성 폼 */}
         <Card className="rounded-2xl mb-6">
           <CardHeader>
             <CardTitle className="text-base">후기 작성</CardTitle>
-            <CardDescription>실제 의뢰 경험을 간단히 남겨 주세요. (별점·닉네임·내용)</CardDescription>
+            <CardDescription>
+              실제 의뢰 경험을 간단히 남겨 주세요. (별점·닉네임·내용)
+            </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
             <div className="flex flex-col md:flex-row gap-3">
@@ -568,7 +687,11 @@ export default function Page() {
                         aria-label={`별점 ${idx}`}
                         title={`별점 ${idx}`}
                       >
-                        <Star className={`w-5 h-5 ${active ? "fill-amber-400 text-amber-400" : ""}`} />
+                        <Star
+                          className={`w-5 h-5 ${
+                            active ? "fill-amber-400 text-amber-400" : ""
+                          }`}
+                        />
                       </button>
                     );
                   })}
@@ -582,8 +705,14 @@ export default function Page() {
               onChange={(e) => setMessage(e.target.value)}
             />
             <div className="flex items-center justify-between">
-              <span className="text-xs text-neutral-500">등록 즉시 화면에 보이고, 서버에도 저장돼요.</span>
-              <Button disabled={!canSubmit} onClick={submitReview} className="rounded-2xl">
+              <span className="text-xs text-neutral-500">
+                등록 즉시 화면에 보이고, 서버에도 저장돼요.
+              </span>
+              <Button
+                disabled={!canSubmit}
+                onClick={submitReview}
+                className="rounded-2xl"
+              >
                 후기 등록
               </Button>
             </div>
@@ -664,38 +793,33 @@ export default function Page() {
         </div>
       </Section>
 
-      {/* FAQ */}
-      <Section id="faq" title="자주 묻는 질문">
-        <div className="grid md:grid-cols-2 gap-4">
-          {[
-            { q: "시안 수정은 몇 회까지 가능한가요?", a: "기본 2회까지 무료이며, 이후 추가 수정은 별도 비용이 발생합니다." },
-            { q: "결제는 어떻게 하나요?", a: "안전한 결제 가이드와 계좌/간편결제 옵션을 안내드립니다." },
-            { q: "원본 파일도 제공되나요?", a: "납품 시 PNG/JPG와 함께 필요 시 일부 원본 제공 가능합니다(상황에 따라 상이)." },
-            { q: "상업적 사용이 가능한가요?", a: "네. 계약 범위 내에서 상업적 사용을 허용합니다." },
-          ].map((item, i) => (
-            <div key={i} className="p-4 rounded-2xl border">
-              <div className="font-medium mb-2">Q. {item.q}</div>
-              <p className="text-sm text-neutral-600">{item.a}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
-
       {/* CTA BAR */}
       <section className="bg-neutral-50 border-t">
         <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <div className="text-xl font-semibold">지금 바로 예쁜 결과물, 깔끔하게 받아보세요</div>
-            <div className="text-sm text-neutral-600">카카오톡/디스코드로 빠르게 상담해 드립니다.</div>
+            <div className="text-xl font-semibold">
+              지금 바로 예쁜 결과물, 깔끔하게 받아보세요
+            </div>
+            <div className="text-sm text-neutral-600">
+              카카오톡/디스코드로 빠르게 상담해 드립니다.
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Button asChild className="rounded-2xl">
-              <a href="https://open.kakao.com/o/slHj1bUh" target="_blank" rel="noreferrer">
+              <a
+                href="https://open.kakao.com/o/slHj1bUh"
+                target="_blank"
+                rel="noreferrer"
+              >
                 카카오톡 문의 <MessageCircle className="w-4 h-4 ml-2" />
               </a>
             </Button>
             <Button asChild variant="secondary" className="rounded-2xl">
-              <a href="https://discord.gg/QPZnJcvAGG" target="_blank" rel="noreferrer">
+              <a
+                href="https://discord.gg/QPZnJcvAGG"
+                target="_blank"
+                rel="noreferrer"
+              >
                 디스코드 문의 <MessagesSquare className="w-4 h-4 ml-2" />
               </a>
             </Button>
@@ -708,11 +832,18 @@ export default function Page() {
         <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row items-center justify-between gap-2">
           <div>© 2025 MIYA DESIGN. All rights reserved.</div>
           <div className="flex items-center gap-4">
-            <a href="#" className="hover:opacity-80">이용약관</a>
-            <a href="#" className="hover:opacity-80">개인정보처리방침</a>
+            <a href="#" className="hover:opacity-80">
+              이용약관
+            </a>
+            <a href="#" className="hover:opacity-80">
+              개인정보처리방침
+            </a>
           </div>
         </div>
       </footer>
+
+      {/* 카테고리 미리보기 모달 */}
+      <CategoryPreviewDialog item={catPreview} onClose={() => setCatPreview(null)} />
     </div>
   );
 }
