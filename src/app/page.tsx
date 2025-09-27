@@ -436,10 +436,10 @@ export default function Page() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs mb-4">
               <Star className="w-4 h-4" />
-              디스코드 배너 · 로고 · 타이틀 전문
+              게임 배너 · 로고 · 타이틀 전문
             </div>
             <h1 className="text-3xl md:text-5xl font-extrabold leading-tight">
-              브랜드를 빛내는 시그니처 비주얼
+              작은 디테일이 다른 결과를 만든다, Design makes the difference.
             </h1>
             <p className="mt-4 text-neutral-600">
               배너, 포스터, 프로필, 로고, 칭호까지 — 깔끔하고 예쁜 무드로 빠르게 제작해 드려요.
