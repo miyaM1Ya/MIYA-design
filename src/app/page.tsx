@@ -47,7 +47,7 @@ import {
    GAS 연결 (⬇️ 네 웹앱 배포 URL로 교체!)
 ========================================================= */
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbxfIiePtAhrlW1SuGT89y5qhZ7MtJzVtJ7CoOyy4Il6Tv8qeTwSDG_OEAm3UPABXmiX/exec"; // <- 네 배포 URL
+  "https://script.google.com/macros/s/AKfycbwx4YGUogU5nfvMEp5dfS7d2RojEhPV9QVYlM5bKhf8k_7mGhxCfhU-0xvi6v0ejuw/exec"; // <- 네 배포 URL
 const SITE_ID = "miyadesign"; // 여러 프로젝트를 한 시트에 모을 때 구분용
 
 /* 한 페이지에 보여줄 후기 개수 */
