@@ -43,6 +43,13 @@ import {
 } from "@/components/ui/dialog";
 
 /* =========================================================
+   GAS 연결 (⬇️ 첫 줄 URL만 네 걸로 바꾸면 끝!)
+========================================================= */
+const GAS_URL =
+  "https://script.google.com/macros/s/AKfycbxfIiePtAhrlW1SuGT89y5qhZ7MtJzVtJ7CoOyy4Il6Tv8qeTwSDG_OEAm3UPABXmiX/exec"; // <- 네 배포 URL로 교체
+const SITE_ID = "miyadesign"; // 여러 사이트/프로젝트를 한 시트에 모을 때 구분 용도
+
+/* =========================================================
    UTIL
 ========================================================= */
 const clamp = (n: number, min: number, max: number) =>
@@ -230,7 +237,7 @@ function Section({
 }
 
 /* =========================================================
-   REVIEWS (with localStorage)
+   REVIEWS (공용: GAS 불러오기/저장 + 로컬 보강)
 ========================================================= */
 type Review = {
   id: string;
@@ -334,36 +341,111 @@ const seedReviews: Review[] = [
   },
 ];
 
+/* ---- GAS 연동 함수들 ---- */
+async function postReviewToGAS(r: {
+  author: string;
+  rating: number;
+  text: string;
+}) {
+  try {
+    await fetch(GAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        id: SITE_ID,
+        author: r.author || "익명",
+        rating: String(r.rating || 5),
+        text: r.text || "",
+      }),
+    });
+  } catch (err) {
+    console.error("GAS post error:", err);
+  }
+}
+
+async function fetchReviewsFromGAS(): Promise<Review[]> {
+  try {
+    const url = `${GAS_URL}?id=${encodeURIComponent(SITE_ID)}`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return [];
+
+    const data = await res.json() as any;
+
+    // GAS 응답은 { ok: boolean, rows: [...] } 형태라고 가정
+    // (혹시 브라우저 번역 때문에 키가 '행'으로 보일 수 있어 대비)
+    const rows =
+      Array.isArray(data?.rows) ? data.rows :
+      Array.isArray(data?.행)   ? data.행   :
+      Array.isArray(data)       ? data      : [];
+
+    const mapped: Review[] = rows.map((x: any, i: number) => ({
+      id: `g-${i}-${x.date ?? ""}-${x.author ?? ""}`,
+      author: String(x.author ?? "익명"),
+      date: x.date,
+      rating: Number(x.rating ?? 5),
+      text: String(x.text ?? ""),
+    }));
+
+    return mapped;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+}
+
+
 /* =========================================================
    MAIN PAGE
 ========================================================= */
 export default function Page() {
   const [contactOpen, setContactOpen] = useState(false);
 
-  // Reviews state (seed + localStorage)
+  // Reviews: 우선 시드 → 로컬 저장 → GAS에서 덮어쓰기(있다면)
   const [reviews, setReviews] = useState<Review[]>(seedReviews);
+
+  // 로컬 불러오기
   useEffect(() => {
     try {
       const raw = localStorage.getItem("miya.reviews");
       if (raw) {
         const parsed = JSON.parse(raw) as Review[];
-        if (Array.isArray(parsed) && parsed.length) setReviews(parsed);
+        if (Array.isArray(parsed) && parsed.length) {
+          setReviews(parsed);
+        }
       }
     } catch {}
   }, []);
+
+  // GAS에서 최신 데이터 불러오기(성공하면 전역으로 대체)
+  useEffect(() => {
+    (async () => {
+      const fromGAS = await fetchReviewsFromGAS();
+      if (fromGAS && fromGAS.length) {
+        setReviews((prev) => {
+          // 중복 단순 제거(같은 author+text 조합)
+          const key = (r: Review) => `${r.author}__${r.text}`;
+          const map = new Map<string, Review>();
+          [...fromGAS, ...prev].forEach((r) => map.set(key(r), r));
+          return Array.from(map.values());
+        });
+      }
+    })();
+  }, []);
+
+  // 로컬 저장 동기화
   useEffect(() => {
     try {
       localStorage.setItem("miya.reviews", JSON.stringify(reviews));
     } catch {}
   }, [reviews]);
 
-  // Review form
+  // 작성 폼
   const [nick, setNick] = useState("");
   const [rating, setRating] = useState(5);
   const [message, setMessage] = useState("");
   const canSubmit = nick.trim().length > 0 && message.trim().length > 5;
 
-  const submitReview = () => {
+  const submitReview = async () => {
     if (!canSubmit) return;
     const entry: Review = {
       id: `r-${Date.now()}`,
@@ -372,10 +454,25 @@ export default function Page() {
       rating: clamp(rating, 1, 5),
       text: message.trim().slice(0, 2000),
     };
+
+    // 1) 화면에 즉시 반영(오프라인이어도 보이게)
     setReviews((prev) => [entry, ...prev]);
     setNick("");
     setRating(5);
     setMessage("");
+
+    // 2) 시트에도 저장
+    postReviewToGAS({
+      author: entry.author,
+      rating: entry.rating,
+      text: entry.text,
+    });
+
+    // 3) 잠깐 뒤에 다시 불러오면(성공시) 모두 같은 목록 공유
+    setTimeout(async () => {
+      const fromGAS = await fetchReviewsFromGAS();
+      if (fromGAS && fromGAS.length) setReviews(fromGAS);
+    }, 600);
   };
 
   return (
@@ -639,7 +736,7 @@ export default function Page() {
             />
             <div className="flex items-center justify-between">
               <span className="text-xs text-neutral-500">
-                저장은 브라우저 로컬에 보관됩니다.
+                등록 즉시 화면에 보이고, 서버에도 저장돼요.
               </span>
               <Button
                 disabled={!canSubmit}
